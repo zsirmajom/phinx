@@ -42,6 +42,7 @@ class Rollback extends AbstractCommand
         parent::configure();
 
         $this->addOption('--environment', '-e', InputOption::VALUE_REQUIRED, 'The target environment');
+        $this->addOption('--dry-run', null, InputOption::VALUE_NONE, 'Do not perform actions, just print output');
 
         $this->setName('rollback')
              ->setDescription('Rollback the last or to a specific migration')
@@ -71,6 +72,7 @@ EOT
 
         $environment = $input->getOption('environment');
         $version = $input->getOption('target');
+        $dryRun = $input->getOption('dry-run');
 
         if (null === $environment) {
             $environment = $this->getConfig()->getDefaultEnvironment();
@@ -85,7 +87,7 @@ EOT
 
         // rollback the specified environment
         $start = microtime(true);
-        $this->getManager()->rollback($environment, $version);
+        $this->getManager()->rollback($environment, $version, $dryRun);
         $end = microtime(true);
 
         $output->writeln('');

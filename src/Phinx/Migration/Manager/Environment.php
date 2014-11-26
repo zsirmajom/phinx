@@ -76,16 +76,22 @@ class Environment
     protected $adapter;
 
     /**
+     * @var boolean 
+     */
+    protected $dryRun;
+
+    /**
      * Class Constructor.
      *
      * @param string $name Environment Name
      * @param array $options Options
      * @return Environment
      */
-    public function __construct($name, $options)
+    public function __construct($name, $options, $dryRun)
     {
         $this->name = $name;
         $this->options = $options;
+        $this->dryRun = $dryRun;
 
         foreach (static::defaultAdapterFactories() as $adapterName => $adapterFactoryClosure) {
             $this->registerAdapter($adapterName, $adapterFactoryClosure);
@@ -120,7 +126,7 @@ class Environment
     {
         $startTime = time();
         $direction = ($direction == MigrationInterface::UP) ? MigrationInterface::UP : MigrationInterface::DOWN;
-        $migration->setAdapter($this->getAdapter());
+        $migration->setAdapter($this->getAdapter()->setDryRun($this->dryRun));
 
         // begin the transaction if the adapter supports it
         if ($this->getAdapter()->hasTransactions()) {
@@ -153,6 +159,9 @@ class Environment
 
         // Record it in the database
         $this->getAdapter()->migrated($migration, $direction, date('Y-m-d H:i:s', $startTime), date('Y-m-d H:i:s', time()));
+
+        // Turn off dry-run mode in the adapter
+        $this->getAdapter()->setDryRun(false);
     }
 
     /**

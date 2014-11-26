@@ -66,6 +66,11 @@ abstract class PdoAdapter implements AdapterInterface
     protected $commandStartTime;
 
     /**
+     * @var boolean
+     */
+    protected $dryRun = false;
+
+    /**
      * Class Constructor.
      *
      * @param array $options Options
@@ -264,11 +269,26 @@ abstract class PdoAdapter implements AdapterInterface
     {
     }
 
+    public function setDryRun($dryRun = false)
+    {
+        $this->dryRun = $dryRun;
+        
+        return $this;
+    }
+
     /**
      * {@inheritdoc}
      */
     public function execute($sql)
     {
+        if ($this->dryRun) {
+            if (OutputInterface::VERBOSITY_NORMAL <= $this->getOutput()->getVerbosity()) {
+                $this->getOutput()->writeln(' -- dry-run execute -- ' . $sql);
+            }
+            
+            return;
+        }
+
         return $this->getConnection()->exec($sql);
     }
 
@@ -277,6 +297,14 @@ abstract class PdoAdapter implements AdapterInterface
      */
     public function query($sql)
     {
+        if ($this->dryRun) {
+            if (OutputInterface::VERBOSITY_NORMAL <= $this->getOutput()->getVerbosity()) {
+                $this->getOutput()->writeln(' -- dry-run query -- ' . $sql);
+            }
+            
+            return;
+        }
+
         return $this->getConnection()->query($sql);
     }
 
@@ -286,6 +314,11 @@ abstract class PdoAdapter implements AdapterInterface
     public function fetchRow($sql)
     {
         $result = $this->query($sql);
+
+        if ($this->dryRun) {
+            return array();
+        }
+
         return $result->fetch();
     }
 
@@ -296,6 +329,11 @@ abstract class PdoAdapter implements AdapterInterface
     {
         $rows = array();
         $result = $this->query($sql);
+
+        if ($this->dryRun) {
+            return array();
+        }
+
         while ($row = $result->fetch()) {
             $rows[] = $row;
         }

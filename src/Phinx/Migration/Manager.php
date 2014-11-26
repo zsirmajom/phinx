@@ -134,12 +134,13 @@ class Manager
      *
      * @param string $environment Environment
      * @param int $version
+     * @param boolean $dryRun
      * @return void
      */
-    public function migrate($environment, $version = null)
+    public function migrate($environment, $version = null, $dryRun = false)
     {
         $migrations = $this->getMigrations();
-        $env = $this->getEnvironment($environment);
+        $env = $this->getEnvironment($environment, $dryRun);
         $versions = $env->getVersions();
         $current = $env->getCurrentVersion();
 
@@ -171,7 +172,7 @@ class Manager
                 }
 
                 if (in_array($migration->getVersion(), $versions)) {
-                    $this->executeMigration($environment, $migration, MigrationInterface::DOWN);
+                    $this->executeMigration($env, $migration, MigrationInterface::DOWN);
                 }
             }
         }
@@ -183,20 +184,20 @@ class Manager
             }
 
             if (!in_array($migration->getVersion(), $versions)) {
-                $this->executeMigration($environment, $migration, MigrationInterface::UP);
+                $this->executeMigration($env, $migration, MigrationInterface::UP);
             }
         }
     }
 
     /**
-     * Execute a migration against the specified Environment.
+     * Execute a migration against the Environment.
      *
-     * @param string $name Environment Name
+     * @param Environment $env Environment instance
      * @param MigrationInterface $migration Migration
      * @param string $direction Direction
      * @return void
      */
-    public function executeMigration($name, MigrationInterface $migration, $direction = MigrationInterface::UP)
+    public function executeMigration(Environment $env, MigrationInterface $migration, $direction = MigrationInterface::UP)
     {
         $this->getOutput()->writeln('');
         $this->getOutput()->writeln(
@@ -207,7 +208,7 @@ class Manager
 
         // Execute the migration and log the time elapsed.
         $start = microtime(true);
-        $this->getEnvironment($name)->executeMigration($migration, $direction);
+        $env->executeMigration($migration, $direction);
         $end = microtime(true);
 
         $this->getOutput()->writeln(
@@ -223,12 +224,13 @@ class Manager
      *
      * @param string $environment Environment
      * @param int $version
+     * @param boolean $dryRun
      * @return void
      */
-    public function rollback($environment, $version = null)
+    public function rollback($environment, $version = null, $dryRun = false)
     {
         $migrations = $this->getMigrations();
-        $env = $this->getEnvironment($environment);
+        $env = $this->getEnvironment($environment, $dryRun);
         $versions = $env->getVersions();
 
         ksort($migrations);
@@ -269,7 +271,7 @@ class Manager
             }
 
             if (in_array($migration->getVersion(), $versions)) {
-                $this->executeMigration($environment, $migration, MigrationInterface::DOWN);
+                $this->executeMigration($env, $migration, MigrationInterface::DOWN);
             }
         }
     }
@@ -293,7 +295,7 @@ class Manager
      * @throws \InvalidArgumentException
      * @return Environment
      */
-    public function getEnvironment($name)
+    public function getEnvironment($name, $dryRun)
     {
         if (isset($this->environments[$name])) {
             return $this->environments[$name];
@@ -308,7 +310,7 @@ class Manager
         }
 
         // create an environment instance and cache it
-        $environment = new Environment($name, $this->getConfig()->getEnvironment($name));
+        $environment = new Environment($name, $this->getConfig()->getEnvironment($name), $dryRun);
         $this->environments[$name] = $environment;
         $environment->setOutput($this->getOutput());
 

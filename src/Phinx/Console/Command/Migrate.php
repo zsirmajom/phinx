@@ -42,6 +42,7 @@ class Migrate extends AbstractCommand
         parent::configure();
 
         $this->addOption('--environment', '-e', InputOption::VALUE_REQUIRED, 'The target environment');
+        $this->addOption('--dry-run', null, InputOption::VALUE_NONE, 'Do not perform actions, just print output');
 
         $this->setName('migrate')
              ->setDescription('Migrate the database')
@@ -71,6 +72,7 @@ EOT
 
         $version = $input->getOption('target');
         $environment = $input->getOption('environment');
+        $dryRun = $input->getOption('dry-run');
 
         if (null === $environment) {
             $environment = $this->getConfig()->getDefaultEnvironment();
@@ -92,7 +94,7 @@ EOT
 
         // run the migrations
         $start = microtime(true);
-        $this->getManager()->migrate($environment, $version);
+        $this->getManager()->migrate($environment, $version, $dryRun);
         $end = microtime(true);
 
         $output->writeln('');
